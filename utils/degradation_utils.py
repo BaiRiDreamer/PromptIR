@@ -13,6 +13,8 @@ class Degradation(object):
         super(Degradation, self).__init__()
         self.args = args
         self.toTensor = ToTensor()
+        # crop_transform 是什么？ ==> 用于随机裁剪图像，裁剪后的图像大小为patch_size，patch_size是args中的参数
+        # ToPILImage() 将tensor转换为PILImage，什么是PILImage？ ==> PIL是Python Imaging Library的缩写，是Python平台上的图像处理标准库
         self.crop_transform = Compose([
             ToPILImage(),
             RandomCrop(args.patch_size),
@@ -57,3 +59,32 @@ class Degradation(object):
 
         degrad_patch_1, _ = self._degrade_by_type(clean_patch, degrade_type)
         return degrad_patch_1
+
+class FundusDegradation(Degradation):
+    def __init__(self, args):
+        super(FundusDegradation, self).__init__(args)
+
+    def degrade(self, clean_patch_1, clean_patch_2, degrade_type=None):
+        if degrade_type == None:
+            degrade_type = random.randint(0, 3)
+        else:
+            degrade_type = degrade_type
+
+        degrad_patch_1, _ = self._degrade_by_type(clean_patch_1, degrade_type)
+        degrad_patch_2, _ = self._degrade_by_type(clean_patch_2, degrade_type)
+        return degrad_patch_1, degrad_patch_2
+
+    def single_degrade(self,clean_patch,degrade_type = None):
+        if degrade_type == None:
+            degrade_type = random.randint(0, 3)
+        else:
+            degrade_type = degrade_type
+
+        degrad_patch_1, _ = self._degrade_by_type(clean_patch, degrade_type)
+        return degrad_patch_1
+
+    def degrade_by_type(self, clean_patch, degrade_type):
+        return self._degrade_by_type(clean_patch, degrade_type)
+
+    def degrade_by_type(self, clean_patch, degrade_type):
+        return self._degrade_by_type(clean_patch, degrade_type)

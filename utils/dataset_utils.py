@@ -11,7 +11,61 @@ import torch
 from utils.image_utils import random_augmentation, crop_img
 from utils.degradation_utils import Degradation
 
-    
+
+# 该类用于加载训练数据集，主要是加载眼底图像数据集
+# 其中清晰的图像直接从指定的文件夹中加载，模糊的图像直接从指定的文件夹中加载
+# Retrurns: [clean_id, degraded_id], degraded_patch, clean_patch
+class FundusDataset(Dataset):
+    def __init__(self, args):
+        super(FundusDataset, self).__init__()
+        self.args = args
+        self.clean_ids = []
+        self.degraded_ids = []
+
+        self._init_ids()
+
+        # crop_transform 是什么？ ==> 用于随机裁剪图像，裁剪后的图像大小为patch_size，patch_size是args中的参数
+        # ToPILImage() 将tensor转换为PILImage，什么是PILImage？ ==> PIL是Python Imaging Library的缩写，是Python平台上的图像处理标准库
+        # Image.open(self.clean_ids[idx]).convert('RGB') 是什么？ ==> 打开图像文件，将图像转换为RGB模式
+        self.crop_transform = Compose([
+            ToPILImage(),
+            RandomCrop(args.patch_size),
+        ])
+
+        self.toTensor = ToTensor()
+
+    def _init_ids(self):
+        clean_folder = self.args.data_file_dir + "clean/"
+        degraded_folder = self.args.data_file_dir + "degraded/"
+
+        clean_name_list = os.listdir(clean_folder)
+        degraded_name_list = os.listdir(degraded_folder)
+
+        # 比较两个文件夹中的文件名是否一致
+        assert len(clean_name_list) == len(degraded_name_list), "Number of images in clean and degraded folders should be same"
+
+        self.clean_ids += [clean_folder + id_ for id_ in clean_name_list]
+        self.degraded_ids += [degraded_folder + id_ for id_ in degraded_name_list]
+
+        self.num_img = len(self.clean_ids)
+        print("Total Images : {}".format(self.num_img))
+
+    def __getitem__(self, idx):
+        clean_img = crop_img(np.array(Image.open(self.clean_ids[idx]).convert('RGB')), base=16)
+        degraded_img = crop_img(np.array(Image.open(self.degraded_ids[idx]).convert('RGB')), base=16)
+
+        clean_patch = self.crop_transform(clean_img)
+        degraded_patch = self.crop_transform(degraded_img)
+
+        clean_patch = self.toTensor(clean_patch)
+        degraded_patch = self.toTensor(degraded_patch)
+
+        return [self.clean_ids[idx], self.degraded_ids[idx]], degraded_patch, clean_patch
+
+    def __len__(self):
+        return self.num_img
+
+
 class PromptTrainDataset(Dataset):
     def __init__(self, args):
         super(PromptTrainDataset, self).__init__()

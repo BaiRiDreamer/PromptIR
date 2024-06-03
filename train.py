@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from utils.dataset_utils import PromptTrainDataset
+from utils.dataset_utils import PromptTrainDataset, FundusDataset
 from net.model import PromptIR
 from utils.schedulers import LinearWarmupCosineAnnealingLR
 import numpy as np
@@ -25,7 +25,7 @@ class PromptIRModel(pl.LightningModule):
     
     def forward(self,x):
         return self.net(x)
-    
+
     def training_step(self, batch, batch_idx):
         # training_step defines the train loop.
         # it is independent of forward
@@ -60,7 +60,8 @@ def main():
     else:
         logger = TensorBoardLogger(save_dir = "logs/")
 
-    trainset = PromptTrainDataset(opt)
+    # trainset = PromptTrainDataset(opt)
+    trainset = FundusDataset(opt)
     checkpoint_callback = ModelCheckpoint(dirpath = opt.ckpt_dir,every_n_epochs = 1,save_top_k=-1)
     trainloader = DataLoader(trainset, batch_size=opt.batch_size, pin_memory=True, shuffle=True,
                              drop_last=True, num_workers=opt.num_workers)
